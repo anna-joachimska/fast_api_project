@@ -4,7 +4,7 @@ from fastapi.responses import HTMLResponse
 from code.primes.primes_functions import is_prime as is_prime_function
 from code.picture.picture_functions import invert as invert_function
 from fastapi.responses import StreamingResponse
-from code.authentification.authentification_functions import login_for_access_token, oauth2_scheme, get_current_time
+from code.authentification.authentification_functions import login_for_access_token, oauth2_scheme, get_current_time, get_current_user
 from fastapi.templating import Jinja2Templates
 
 app = FastAPI()
@@ -23,10 +23,23 @@ def uploadpic(request: Request):
 async def invert(file : UploadFile = File(...)):
     return StreamingResponse(invert_function(file), media_type="image/jpeg")
 
+@app.get("/login",  response_class=HTMLResponse)
+def login(request: Request):
+    return templates.TemplateResponse("login_page.html",
+                                      {"request": request})
+
+@app.post("/login",  response_class=HTMLResponse)
+def login(request: Request, username: str, password: str):
+    return templates.TemplateResponse("login_page.html",
+                                      {"request": request},
+                                      {"username": username},
+                                      {"password": password})
+
+@app.post("/token")
+def access_token(form_data: OAuth2PasswordRequestForm = Depends(get_current_user)):
+    return login_for_access_token(form_data)
+
 @app.get("/time")
 def get_time(token: str = Depends(oauth2_scheme)):
     return get_current_time(token)
 
-@app.post("/token")
-def access_token(form_data: OAuth2PasswordRequestForm = Depends()):
-    return login_for_access_token(form_data)
